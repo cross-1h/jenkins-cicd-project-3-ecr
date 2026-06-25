@@ -52,7 +52,7 @@ pipeline {
             }
         }
 
-        stage('Push to ECR') {
+        /*stage('Push to ECR') {
             steps {
                 sh '''
                     export AWS_ACCESS_KEY_ID=$AWS_CREDS_USR
@@ -69,6 +69,32 @@ pipeline {
                     docker push ${IMAGE}:${IMAGE_TAG}
                     docker push ${IMAGE}:latest
                 '''
+            }
+        }*/
+        stage('Push to ECR') {
+            steps {
+                // Securely binds the Jenkins credential 'aws-ecr' to environment variables
+                withCredentials([usernamePassword(
+                    credentialsId: 'aws-ecr', 
+                    usernameVariable: 'AWS_ACCESS_KEY_ID', 
+                    passwordVariable: 'AWS_SECRET_ACCESS_KEY'
+                )]) {
+                    sh '''
+                        # 1. Set the default region for the AWS CLI session
+                        export AWS_DEFAULT_REGION="${AWS_REGION}"
+
+                        # 2. Check if the repository exists; create it if it does not
+                        aws ecr describe-repositories --repository-names "${ECR_REPO}" || \
+                        aws ecr create-repository --repository-name "${ECR_REPO}"
+
+                        # 3. Authenticate Docker with your specific ECR Registry URL
+                        aws ecr get-login-password | docker login --username AWS --password-stdin "${ECR_REGISTRY}"
+
+                        # 4. Push both tags to the repository
+                        docker push "${IMAGE}:${IMAGE_TAG}"
+                        docker push "${IMAGE}:latest"
+                    '''
+                }
             }
         }
 
