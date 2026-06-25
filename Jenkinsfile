@@ -52,11 +52,14 @@ pipeline {
             }
         }
 
-        /*stage('Push to ECR') {
+        stage('Push to ECR') {
             steps {
                 sh '''
                     export AWS_ACCESS_KEY_ID=$AWS_CREDS_USR
                     export AWS_SECRET_ACCESS_KEY=$AWS_CREDS_PSW
+
+                    # Explicity set the default region for the AWS CLI session
+                    export AWS_DEFAULT_REGION="${AWS_REGION}"
 
                     # Create the repository the first time, ignore the error if it exists.
                     aws ecr describe-repositories --region ${AWS_REGION} --repository-names ${ECR_REPO} \
@@ -70,8 +73,8 @@ pipeline {
                     docker push ${IMAGE}:latest
                 '''
             }
-        }*/
-        stage('Push to ECR') {
+        }
+        /*stage('Push to ECR') {
             steps {
                 // Securely binds the Jenkins credential 'aws-ecr' to environment variables
                 withCredentials([usernamePassword(
@@ -96,7 +99,7 @@ pipeline {
                     '''
                 }
             }
-        }
+        }*/
 
         stage('Deploy') {
             steps {
